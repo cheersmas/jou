@@ -27,6 +27,10 @@ func (js *journalService) Delete(ctx context.Context, id int) (int, error) {
 	return js.journalRepository.Delete(ctx, id)
 }
 
+func (js *journalService) ListAll(ctx context.Context) ([]domains.Journal, error) {
+	return js.journalRepository.ListAll(ctx)
+}
+
 func NewJournalService(js ports.JournalRepository) *journalService {
 	return &journalService{
 		journalRepository: js,

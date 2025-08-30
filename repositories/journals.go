@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"time"
 
 	"github.com/cheersmas/jou/domains"
 )
@@ -21,11 +20,12 @@ type journalRepository struct {
 	db *sql.DB
 
 	// queries
-	readJournalQuery   *sql.Stmt
-	existsJournalQuery *sql.Stmt
-	insertJournalQuery *sql.Stmt
-	deleteJournalQuery *sql.Stmt
-	updateJournalQuery *sql.Stmt
+	readJournalQuery    *sql.Stmt
+	existsJournalQuery  *sql.Stmt
+	insertJournalQuery  *sql.Stmt
+	deleteJournalQuery  *sql.Stmt
+	updateJournalQuery  *sql.Stmt
+	listAllJournalQuery *sql.Stmt
 }
 
 func (jr *journalRepository) Create(ctx context.Context, content domains.Journal) (int, error) {
@@ -43,12 +43,36 @@ func (jr *journalRepository) Create(ctx context.Context, content domains.Journal
 
 func (jr *journalRepository) Read(ctx context.Context, journalId int) (domains.Journal, error) {
 	var journal domains.Journal
-	var createdAt int64
 	if err := jr.readJournalQuery.QueryRowContext(ctx, journalId).Scan(&journal.Id, &journal.Content, &journal.CreatedAt); err == sql.ErrNoRows {
 		return journal, err
 	}
-	journal.CreatedAt = time.Unix(createdAt, 0)
 	return journal, nil
+}
+
+func (jr *journalRepository) ListAll(ctx context.Context) ([]domains.Journal, error) {
+	rows, err := jr.listAllJournalQuery.QueryContext(ctx)
+	if err != nil {
+		log.Printf("ERROR: failed to query journals: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var journals []domains.Journal
+	for rows.Next() {
+		var journal domains.Journal
+		if err := rows.Scan(&journal.Id, &journal.Content, &journal.CreatedAt); err != nil {
+			log.Printf("ERROR: failed to scan journal row: %v", err)
+			return nil, err
+		}
+		journals = append(journals, journal)
+	}
+
+	if err = rows.Err(); err != nil {
+		log.Printf("ERROR: error after scanning rows: %v", err)
+		return nil, err
+	}
+
+	return journals, nil
 }
 
 func (jr *journalRepository) Update(ctx context.Context, id int, content string) (int, error) {
@@ -74,6 +98,7 @@ func (jr *journalRepository) Delete(ctx context.Context, id int) (int, error) {
 }
 
 func NewJournalRepository(ctx context.Context, db *sql.DB) (*journalRepository, error) {
+	// Create tables if they don't exist
 	if _, err := db.ExecContext(ctx, createJournalTable); err != nil {
 		log.Printf("%q %s\n", err, createJournalTable)
 		return nil, err
@@ -99,13 +124,18 @@ func NewJournalRepository(ctx context.Context, db *sql.DB) (*journalRepository, 
 	if err != nil {
 		return nil, err
 	}
+	listAllJournalQuery, err := db.PrepareContext(ctx, "SELECT id, content, createdAt FROM journals ORDER BY createdAt DESC")
+	if err != nil {
+		return nil, err
+	}
 
 	return &journalRepository{
-		db:                 db,
-		readJournalQuery:   readJournalQuery,
-		existsJournalQuery: existsJournalQuery,
-		insertJournalQuery: insertJournalQuery,
-		deleteJournalQuery: deleteJournalQuery,
-		updateJournalQuery: updateJournalQuery,
+		db:                  db,
+		readJournalQuery:    readJournalQuery,
+		existsJournalQuery:  existsJournalQuery,
+		insertJournalQuery:  insertJournalQuery,
+		deleteJournalQuery:  deleteJournalQuery,
+		updateJournalQuery:  updateJournalQuery,
+		listAllJournalQuery: listAllJournalQuery,
 	}, nil
 }

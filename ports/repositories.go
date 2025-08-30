@@ -11,4 +11,5 @@ type JournalRepository interface {
 	Read(ctx context.Context, journalId int) (domains.Journal, error)
 	Update(ctx context.Context, id int, content string) (int, error)
 	Delete(ctx context.Context, id int) (int, error)
+	ListAll(ctx context.Context) ([]domains.Journal, error)
 }
