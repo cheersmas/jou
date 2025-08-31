@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
-	"github.com/cheersmas/jou/cmd"
 	"github.com/cheersmas/jou/database"
+	"github.com/cheersmas/jou/repositories"
+	"github.com/cheersmas/jou/services"
+	"github.com/cheersmas/jou/tea"
 )
 
 func main() {
+	ctx := context.Background()
 	db, err := database.NewDatabase()
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
@@ -17,5 +21,11 @@ func main() {
 	fmt.Print("wtf is going on")
 	defer db.Close()
 
-	cmd.Execute()
+	journalRepo, err := repositories.NewJournalRepository(ctx, db)
+	if err != nil {
+		log.Fatalf("Failed to initialize journal: %v", err)
+	}
+	journalService := services.NewJournalService(journalRepo)
+
+	tea.Root(ctx, journalService)
 }
