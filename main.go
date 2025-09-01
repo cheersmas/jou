@@ -4,10 +4,10 @@ import (
 	"context"
 	"log"
 
+	"github.com/cheersmas/jou/app"
 	"github.com/cheersmas/jou/database"
 	"github.com/cheersmas/jou/repositories"
 	"github.com/cheersmas/jou/services"
-	"github.com/cheersmas/jou/tea"
 )
 
 func main() {
@@ -25,5 +25,5 @@ func main() {
 	}
 	journalService := services.NewJournalService(journalRepo)
 
-	tea.Root(ctx, journalService)
+	app.Root(ctx, journalService)
 }
