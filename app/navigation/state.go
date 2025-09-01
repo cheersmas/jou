@@ -57,10 +57,6 @@ func (s *AppState) MoveCursor(direction int) {
 		if newPos >= 0 && newPos < len(s.Options) {
 			s.CursorPosition = newPos
 		}
-	case constants.ListView, constants.EditView:
-		newPos := s.CursorPosition + direction
-		if newPos >= 0 && newPos < len(s.Journals) {
-			s.CursorPosition = newPos
-		}
+		// Remove the ListView and EditView cases since the list component handles its own cursor
 	}
 }

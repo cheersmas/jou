@@ -55,11 +55,14 @@ func (r *Router) HandleMenuSelection() tea.Cmd {
 }
 
 func (r *Router) HandleJournalSelection() tea.Cmd {
-	if r.state.CursorPosition >= len(r.state.Journals) {
+	// Get the selected index from the list component instead of state cursor position
+	selectedIndex := r.state.List.Index()
+
+	if selectedIndex >= len(r.state.Journals) {
 		return nil
 	}
 
-	selected := r.state.Journals[r.state.CursorPosition]
+	selected := r.state.Journals[selectedIndex]
 
 	if r.state.CurrentView == constants.EditView {
 		r.state.EditingJournal = &selected

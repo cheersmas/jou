@@ -28,9 +28,15 @@ func (h *InputHandler) HandleKeyMsg(msg tea.KeyMsg) tea.Cmd {
 	case "ctrl+c":
 		return h.handleQuitKey(msg)
 	case "up", "k":
-		h.state.MoveCursor(-1)
+		// Only move cursor for menu view, let list component handle its own navigation
+		if h.state.CurrentView == constants.MenuView {
+			h.state.MoveCursor(-1)
+		}
 	case "down", "j":
-		h.state.MoveCursor(1)
+		// Only move cursor for menu view, let list component handle its own navigation
+		if h.state.CurrentView == constants.MenuView {
+			h.state.MoveCursor(1)
+		}
 	case "enter":
 		return h.handleEnterKey()
 	case "ctrl+s":
