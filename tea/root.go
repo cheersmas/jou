@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -37,6 +38,21 @@ var (
 		b.Left = "┤"
 		return titleStyle.BorderStyle(b)
 	}()
+
+	// Add consistent container styling
+	containerStyle = lipgloss.NewStyle().
+			Padding(1, 2)
+
+	// Add consistent header styling
+	headerStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("205")).
+			Background(lipgloss.Color("62")).
+			Padding(0, 1)
+
+	// Add consistent footer styling
+	footerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241"))
 )
 
 const (
@@ -108,13 +124,24 @@ func max(a, b int) int {
 func initialModel(ctx context.Context, js ports.JournalService) model {
 	ti := textarea.New()
 	ti.Placeholder = "Write your journal entry here..."
-	ti.Focus()
 
 	vp := viewport.New(30, 5)
 	vp.SetContent(`init`)
 
 	items := []list.Item{}
 	li := list.New(items, list.NewDefaultDelegate(), 0, 0)
+
+	// Add custom help keys
+	li.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			key.NewBinding(
+				key.WithKeys("backspace"),
+				key.WithHelp("backspace", "back to menu"),
+			),
+		}
+	}
+
+	li.DisableQuitKeybindings()
 
 	return model{
 		ctx:             ctx,
@@ -145,7 +172,7 @@ func (m *model) loadJournals() error {
 		title := journal.CreatedAt.Format(timeFormat)
 		items = append(items, item{title: title, desc: journal.Content})
 	}
-	m.list = list.New(items, list.NewDefaultDelegate(), m.list.Width(), m.list.Height())
+	m.list.SetItems(items)
 	m.list.Title = "Journals"
 	return nil
 }
@@ -155,7 +182,7 @@ func (m *model) handleKeyMsg(msg tea.KeyMsg) tea.Cmd {
 	switch msg.String() {
 	case "esc":
 		return m.handleEscapeKey()
-	case "ctrl+c", "q":
+	case "ctrl+c":
 		return m.handleQuitKey(msg)
 	case "up", "k":
 		m.moveCursor(-1)
@@ -189,9 +216,7 @@ func (m *model) handleEscapeKey() tea.Cmd {
 func (m *model) handleQuitKey(msg tea.KeyMsg) tea.Cmd {
 	switch m.currentView {
 	case AddView:
-		if msg.String() != "q" {
-			m.currentView = ConfirmView
-		}
+		m.currentView = ConfirmView
 		return nil
 	default:
 		return tea.Quit
@@ -236,6 +261,10 @@ func (m *model) handleMenuSelection() tea.Cmd {
 	m.currentView = selectedView
 	m.resetCursorPosition()
 
+	if selectedView == AddView {
+		m.textarea.Focus()
+	}
+
 	if selectedView == ListView || selectedView == EditView {
 		if err := m.loadJournals(); err != nil {
 			m.lastError = err
@@ -255,9 +284,11 @@ func (m *model) handleJournalSelection() tea.Cmd {
 
 	if m.currentView == EditView {
 		m.editingJournal = &selected
-		m.textarea.SetValue(selected.Content)
 		m.currentView = AddView
 		m.recentlySavedId = selected.Id
+		// Trim both spaces and newlines, and ensure no trailing newline
+		content := strings.TrimSpace(selected.Content)
+		m.textarea.SetValue(content)
 	} else {
 		// set the content first
 		m.viewingJournal = &selected
@@ -265,6 +296,7 @@ func (m *model) handleJournalSelection() tea.Cmd {
 		m.currentView = JournalView
 	}
 
+	m.resetCursorPosition()
 	return nil
 }
 
@@ -292,7 +324,8 @@ func (m *model) handleSaveKey() tea.Cmd {
 	}
 
 	// TODO: yuck fix this by getting the journal before hand
-	m.editingJournal = &domains.Journal{Content: content}
+	editingJournal, err := m.service.Read(m.ctx, m.recentlySavedId)
+	m.editingJournal = &editingJournal
 
 	if err != nil {
 		m.lastError = err
@@ -380,27 +413,45 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View rendering methods
 func (m model) renderMenu() string {
-	title := roundedBorderStyle.Render("CLJour")
-	description := roundedBorderStyle.Render("A commandline journaling tool")
-	question := "\nWhat would you like to do?\n\n"
-	formatedString := lipgloss.JoinVertical(lipgloss.Center, title, description, question)
-	s := ""
+	header := headerStyle.Render("CLJour")
+	subtitle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render("A commandline journaling tool")
+
+	content := "What would you like to do?\n\n"
 	for i, option := range m.options {
 		cursor := "[ ]"
 		if i == m.cursorPosition {
 			cursor = "[>]"
 		}
-		s += fmt.Sprintf("%s %s\n", cursor, option)
+		content += fmt.Sprintf("%s %s\n", cursor, option)
 	}
-	return formatedString + "\n" + s
+
+	footer := footerStyle.Render("↑k up • ↓j down • enter select • ctrl+c quit")
+
+	// Get the full content
+	fullContent := lipgloss.JoinVertical(lipgloss.Left, header, subtitle, "", content, "", footer)
+
+	// Make it full height and width
+	return lipgloss.NewStyle().
+		Width(m.viewport.Width).
+		Height(m.viewport.Height).
+		Padding(1, 2).
+		Align(lipgloss.Center, lipgloss.Center).
+		Render(fullContent)
 }
 
 func (m model) renderConfirmation() string {
-	confirmationMessage := "Unsaved chages may get lost"
-	cancel := roundedBorderStyle.Render("<esc>,<backspace>: cancel")
-	discard := roundedBorderStyle.Render("<enter>: discard and go to main menu")
-	quit := roundedBorderStyle.Render("<ctrl + q>: quit")
-	return lipgloss.JoinVertical(lipgloss.Left, confirmationMessage, cancel, discard, quit)
+	header := headerStyle.Render("Confirm Exit")
+
+	content := "Unsaved changes may get lost\n\n"
+	content += "• <esc>, <backspace>: cancel\n"
+	content += "• <enter>: discard and go to main menu\n"
+	content += "• <ctrl + q>: quit"
+
+	footer := footerStyle.Render("Choose an option above")
+
+	return containerStyle.Render(
+		lipgloss.JoinVertical(lipgloss.Left, header, "", content, "", footer),
+	)
 }
 
 func (m model) hasUnsavedChanges() bool {
@@ -417,28 +468,40 @@ func (m model) addJournalHeader() string {
 	} else {
 		createdAt = time.Now()
 	}
-	s := titleStyle.Render(fmt.Sprintf("Journal entry %s", createdAt.Format(timeFormat)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, s)
+
+	header := headerStyle.Render(fmt.Sprintf("Journal entry %s", createdAt.Format(timeFormat)))
+	return header
 }
 
 func (m model) addJournalFooter() string {
-	info := infoStyle.Render("<ctrl + s>: Save | <ctrl + c>: quit")
-	status := ""
+	var status string
 	if m.hasUnsavedChanges() {
-		status = infoStyle.Render("unsaved changes")
+		status = lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render("● Unsaved changes")
 	} else {
-		status = infoStyle.Render("saved")
-	}
-	if m.lastError != nil {
-		info = infoStyle.Render(fmt.Sprintf("Error: %v\n", m.lastError))
+		status = lipgloss.NewStyle().Foreground(lipgloss.Color("46")).Render("✓ Saved")
 	}
 
-	line := strings.Repeat("─", max(0, m.viewport.Width-(lipgloss.Width(info)+lipgloss.Width(status))))
-	return lipgloss.JoinHorizontal(lipgloss.Center, info, status, line)
+	if m.recentlySavedId != unsavedId {
+		status += fmt.Sprintf(" (ID: %d)", m.recentlySavedId)
+	}
+
+	if m.lastError != nil {
+		status += "\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render(fmt.Sprintf("✗ Error: %v", m.lastError))
+	}
+
+	footer := footerStyle.Render("<ctrl + s>: Save | <ctrl + c>: quit")
+
+	return lipgloss.JoinVertical(lipgloss.Left, status, "", footer)
 }
 
 func (m model) renderAddJournal() string {
-	return fmt.Sprintf("%s\n\n%s\n\n%s", m.addJournalHeader(), m.textarea.View(), m.addJournalFooter())
+	header := m.addJournalHeader()
+	content := m.textarea.View()
+	footer := m.addJournalFooter()
+
+	return containerStyle.Render(
+		lipgloss.JoinVertical(lipgloss.Left, header, "", content, "", footer),
+	)
 }
 
 func (m model) renderJournalList() string {
@@ -456,15 +519,32 @@ func (m model) headerView() string {
 }
 
 func (m model) footerView() string {
-	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
-	line := strings.Repeat("─", max(0, m.viewport.Width-lipgloss.Width(info)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+	// Create the navigation footer on the left
+	navFooter := footerStyle.Render("↑k up • ↓j down • esc back to list • ctrl+c quit")
+
+	// Create the scroll percentage on the right
+	scrollInfo := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+
+	// Calculate the space needed, ensuring it's not negative
+	navWidth := lipgloss.Width(navFooter)
+	scrollWidth := lipgloss.Width(scrollInfo)
+	availableWidth := m.viewport.Width - navWidth - scrollWidth
+
+	// If there's not enough space, just put them next to each other
+	if availableWidth <= 0 {
+		return lipgloss.JoinHorizontal(lipgloss.Left, navFooter, scrollInfo)
+	}
+
+	// Join them side by side with space between
+	return lipgloss.JoinHorizontal(lipgloss.Left, navFooter, strings.Repeat(" ", availableWidth), scrollInfo)
 }
 
 func (m model) renderJournalView() string {
 	if !m.ready {
 		return "\n  Initializing..."
 	}
+
+	// Just return the viewport content with header and footer - no additional container needed
 	return fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView())
 }
 

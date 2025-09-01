@@ -1,5 +1,6 @@
 # Binary files
 /jou
+/cljou
 *.exe
 *.exe~
 *.dll
