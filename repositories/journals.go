@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/cheersmas/jou/domains"
 )
@@ -30,7 +31,9 @@ type journalRepository struct {
 }
 
 func (jr *journalRepository) Create(ctx context.Context, content domains.Journal) (int, error) {
-	res, err := jr.insertJournalQuery.ExecContext(ctx, content.Content)
+	// Use Go's time.Now() to ensure consistent timezone handling
+	now := time.Now()
+	res, err := jr.insertJournalQuery.ExecContext(ctx, content.Content, now)
 	if err != nil {
 		log.Printf("ERROR: failed to create a journal entry: %v", err)
 		return -1, err
@@ -115,7 +118,8 @@ func NewJournalRepository(ctx context.Context, db *sql.DB) (*journalRepository, 
 	if err != nil {
 		return nil, err
 	}
-	insertJournalQuery, err := db.PrepareContext(ctx, "INSERT INTO journals(content) VALUES(?)")
+	// Updated to include createdAt parameter
+	insertJournalQuery, err := db.PrepareContext(ctx, "INSERT INTO journals(content, createdAt) VALUES(?, ?)")
 	if err != nil {
 		return nil, err
 	}
