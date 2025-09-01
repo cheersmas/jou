@@ -12,7 +12,7 @@ import (
 type MenuView struct{}
 
 func (v MenuView) Render(state *navigation.AppState) string {
-	header := styles.HeaderStyle.Render("CLJour")
+	header := styles.HeaderStyle.Render("jou")
 	subtitle := styles.FooterStyle.Render("A commandline journaling tool")
 
 	content := "What would you like to do?\n\n"
