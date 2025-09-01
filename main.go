@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/cheersmas/jou/database"
@@ -18,7 +17,6 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 		panic(err)
 	}
-	fmt.Print("wtf is going on")
 	defer db.Close()
 
 	journalRepo, err := repositories.NewJournalRepository(ctx, db)
