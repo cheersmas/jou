@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/cheersmas/jou/domains"
@@ -80,13 +81,15 @@ func (jr *journalRepository) Update(ctx context.Context, id int, content string)
 	if err != nil {
 		return -1, nil
 	}
-
-	var updateId int64
-	if updateId, err = res.LastInsertId(); err != nil {
+	rowsEffected, err := res.RowsAffected()
+	if err != nil {
 		return -1, err
 	}
+	if rowsEffected == 0 {
+		return -1, fmt.Errorf("no journal found with id %d", id)
+	}
 
-	return int(updateId), nil
+	return int(id), nil
 }
 
 func (jr *journalRepository) Delete(ctx context.Context, id int) (int, error) {
