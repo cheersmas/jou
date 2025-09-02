@@ -1,20 +1,20 @@
-# jou 📝
+# jou
 
 A beautiful, terminal-based journaling application built with Go and the Charmbracelet Bubble Tea framework. jou provides an intuitive command-line interface for creating, editing, and managing your daily journal entries.
 
 ![jou Demo](docs/demo.gif) <!-- Placeholder for demo GIF -->
 
-## ✨ Features
+## Features
 
-- **�� Create Journal Entries**: Write and save your daily thoughts and experiences
-- **📖 View Entries**: Browse through your journal entries with a clean, readable interface
-- **✏️ Edit Entries**: Modify existing journal entries with ease
-- **🗂️ List Management**: View all your journal entries in an organized list
-- **💾 SQLite Storage**: All your entries are stored locally in a SQLite database
-- **🎨 Beautiful UI**: Clean, modern terminal interface with intuitive navigation
-- **⌨️ Keyboard Shortcuts**: Efficient navigation with keyboard controls
+- **Create Journal Entries**: Write and save your daily thoughts and experiences
+- **View Entries**: Browse through your journal entries with a clean, readable interface
+- **Edit Entries**: Modify existing journal entries with ease
+- **List Management**: View all your journal entries in an organized list
+- **SQLite Storage**: All your entries are stored locally in a SQLite database
+- **Beautiful UI**: Clean, modern terminal interface with intuitive navigation
+- **Keyboard Shortcuts**: Efficient navigation with keyboard controls
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -37,13 +37,7 @@ go build -o jou main.go
 ./jou
 ```
 
-#### Using Go Install
-
-```bash
-go install github.com/cheersmas/jou@latest
-```
-
-## 🎮 Usage
+## Usage
 
 ### Navigation
 
@@ -72,7 +66,7 @@ go install github.com/cheersmas/jou@latest
 - **Clean Architecture**: Separation of concerns with ports and adapters
 - **Repository Pattern**: Data access abstraction
 
-## 🛠️ Development
+## Development
 
 ### Setting Up Development Environment
 
@@ -100,7 +94,7 @@ GOOS=windows GOARCH=amd64 go build -o jou-windows.exe main.go
 GOOS=darwin GOARCH=amd64 go build -o jou-macos main.go
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
@@ -120,12 +114,12 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - Ensure code is properly formatted with `gofmt`
 - Use meaningful commit messages
 
-## 🐛 Known Issues
+## Known Issues
 
 - [ ] Extra line on textarea
 - [ ] Backspace removes characters on cancelling confirmation screen
 
-## 🛣️ Roadmap
+## Roadmap
 
 - [ ] Add search functionality for journal entries
 - [ ] Implement journal entry categories/tags
@@ -135,7 +129,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - [ ] Implement journal entry encryption
 - [ ] Add journal statistics and insights
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -145,7 +139,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Lip Gloss](https://github.com/charmbracelet/lipgloss) for beautiful terminal styling
 - The Go community for excellent tooling and libraries
 
-## 📞 Support
+## Support
 
 If you encounter any issues or have questions:
 
@@ -155,4 +149,4 @@ If you encounter any issues or have questions:
 
 ---
 
-**Happy Journaling! 📖✨**
+**Happy Journaling!**
